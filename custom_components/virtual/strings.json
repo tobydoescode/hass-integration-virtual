@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create virtual device",
+        "description": "Define the virtual device.",
+        "data": {
+          "name": "Device name",
+          "device_id": "Device ID",
+          "connection_type": "Connection type",
+          "connection_value": "Connection value",
+          "custom_connection_type": "Custom connection type"
+        }
+      },
+      "switch_menu": {
+        "title": "Add switches",
+        "description": "Add switches to this virtual device.",
+        "data": {
+          "add_switch": "Add a switch"
+        }
+      },
+      "add_switch": {
+        "title": "Add switch",
+        "description": "Define a virtual switch.",
+        "data": {
+          "name": "Name",
+          "key": "Key",
+          "icon": "Icon",
+          "entity_category": "Entity category",
+          "device_class": "Device class"
+        }
+      }
+    },
+    "error": {
+      "duplicate_device_id": "A virtual device with this ID already exists.",
+      "duplicate_switch_key": "A switch with this key already exists on this device.",
+      "invalid_connection": "Connection type and value are required.",
+      "invalid_connection_type": "Connection type is invalid.",
+      "invalid_mac": "MAC address is invalid."
+    }
+  }
+}
