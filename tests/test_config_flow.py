@@ -27,7 +27,10 @@ from custom_components.virtual.const import (
 
 async def test_config_flow_creates_empty_virtual_device(hass: HomeAssistant) -> None:
     """Create a virtual device without switches."""
-    with patch("custom_components.virtual.config_flow.generate_device_id", return_value="virtual_1"):
+    with patch(
+        "custom_components.virtual.config_flow.generate_device_id",
+        return_value="virtual_1",
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": SOURCE_USER},
@@ -58,7 +61,10 @@ async def test_config_flow_creates_empty_virtual_device(hass: HomeAssistant) -> 
 
 async def test_config_flow_adds_multiple_switches(hass: HomeAssistant) -> None:
     """Add multiple switches during initial setup."""
-    with patch("custom_components.virtual.config_flow.generate_device_id", return_value="virtual_2"):
+    with patch(
+        "custom_components.virtual.config_flow.generate_device_id",
+        return_value="virtual_2",
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": SOURCE_USER},

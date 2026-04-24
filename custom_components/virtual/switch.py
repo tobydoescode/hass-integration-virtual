@@ -29,8 +29,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up virtual switches from a config entry."""
     async_add_entities(
-        VirtualSwitch(entry.data, switch)
-        for switch in entry.data.get(CONF_SWITCHES, [])
+        VirtualSwitch(entry.data, switch) for switch in entry.data.get(CONF_SWITCHES, [])
     )
 
 

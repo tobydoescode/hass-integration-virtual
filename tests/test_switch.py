@@ -14,7 +14,8 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.restore_state import StoredState, async_get as async_get_restore_state
+from homeassistant.helpers.restore_state import StoredState
+from homeassistant.helpers.restore_state import async_get as async_get_restore_state
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 

@@ -201,8 +201,7 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
     def _device_id_exists(self, device_id: str) -> bool:
         """Return true if another config entry already uses the device id."""
         return any(
-            entry.data.get(CONF_DEVICE_ID) == device_id
-            for entry in self._async_current_entries()
+            entry.data.get(CONF_DEVICE_ID) == device_id for entry in self._async_current_entries()
         )
 
 
@@ -233,9 +232,7 @@ class VirtualOptionsFlow(OptionsFlow):
             data_schema=vol.Schema({vol.Required(CONF_ACTION): vol.In(OPTIONS_ACTIONS)}),
         )
 
-    async def async_step_edit_device(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_edit_device(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Edit device metadata."""
         errors: dict[str, str] = {}
         current = self._config_entry.data
@@ -268,9 +265,7 @@ class VirtualOptionsFlow(OptionsFlow):
             errors=errors,
         )
 
-    async def async_step_add_switch(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_add_switch(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Add a switch to an existing virtual device."""
         errors: dict[str, str] = {}
         current = self._config_entry.data
@@ -312,9 +307,7 @@ class VirtualOptionsFlow(OptionsFlow):
             data_schema=vol.Schema({vol.Required(CONF_KEY): vol.In(key_options)}),
         )
 
-    async def async_step_edit_switch(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_edit_switch(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Edit switch metadata."""
         current = self._config_entry.data
         switches = list(current.get(CONF_SWITCHES, []))

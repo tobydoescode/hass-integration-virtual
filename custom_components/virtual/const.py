@@ -22,4 +22,3 @@ CONF_CUSTOM_CONNECTION_TYPE = "custom_connection_type"
 CONNECTION_TYPE_NONE = "none"
 CONNECTION_TYPE_MAC = "mac"
 CONNECTION_TYPE_CUSTOM = "custom"
-
