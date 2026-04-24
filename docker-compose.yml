@@ -1,0 +1,12 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    ports:
+      - "8123:8123"
+    volumes:
+      - ha-config:/config
+      - ./custom_components/virtual:/config/custom_components/virtual:ro
+    restart: unless-stopped
+
+volumes:
+  ha-config:
