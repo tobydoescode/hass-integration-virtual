@@ -6,20 +6,14 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME, STATE_ON
+from homeassistant.const import STATE_ON, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import (
-    CONF_DEVICE_CLASS,
-    CONF_DEVICE_ID,
-    CONF_ENTITY_CATEGORY,
-    CONF_ICON,
-    CONF_KEY,
-    CONF_SWITCHES,
-)
-from .models import build_device_info, switch_unique_id
+from .const import CONF_INITIAL_VALUE
+from .entity import VirtualEntityBase
+from .models import coerce_entity_value, entities_for_platform
 
 
 async def async_setup_entry(
@@ -29,28 +23,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up virtual switches from a config entry."""
     async_add_entities(
-        VirtualSwitch(entry.data, switch) for switch in entry.data.get(CONF_SWITCHES, [])
+        VirtualSwitch(entry.data, definition)
+        for definition in entities_for_platform(entry.data, Platform.SWITCH)
     )
 
 
-class VirtualSwitch(RestoreEntity, SwitchEntity):
+class VirtualSwitch(VirtualEntityBase, RestoreEntity, SwitchEntity):
     """A virtual switch."""
-
-    _attr_has_entity_name = False
-    _attr_should_poll = False
 
     def __init__(self, device: dict[str, Any], definition: dict[str, Any]) -> None:
         """Initialize the virtual switch."""
-        self._device = device
-        self._definition = definition
-        self._attr_name = definition[CONF_NAME]
-        self._attr_unique_id = switch_unique_id(device[CONF_DEVICE_ID], definition[CONF_KEY])
-        self.internal_integration_suggested_object_id = definition[CONF_KEY]
-        self._attr_icon = definition.get(CONF_ICON) or None
-        self._attr_entity_category = definition.get(CONF_ENTITY_CATEGORY) or None
-        self._attr_device_class = definition.get(CONF_DEVICE_CLASS) or None
-        self._attr_device_info = build_device_info(device)
-        self._attr_is_on = False
+        super().__init__(device, definition)
+        self._attr_is_on = bool(definition.get(CONF_INITIAL_VALUE, False))
 
     async def async_added_to_hass(self) -> None:
         """Restore the previous switch state."""
@@ -66,4 +50,9 @@ class VirtualSwitch(RestoreEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         self._attr_is_on = False
+        self.async_write_ha_state()
+
+    async def async_set_virtual_state(self, value: Any) -> None:
+        """Set switch state from the virtual.set_state service."""
+        self._attr_is_on = coerce_entity_value(self._definition, value)
         self.async_write_ha_state()

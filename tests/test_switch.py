@@ -24,12 +24,15 @@ from custom_components.virtual.const import (
     CONF_CONNECTION_VALUE,
     CONF_DEVICE_CLASS,
     CONF_DEVICE_ID,
+    CONF_ENTITIES,
     CONF_ENTITY_CATEGORY,
+    CONF_ENTITY_TYPE,
     CONF_ICON,
+    CONF_INITIAL_VALUE,
     CONF_KEY,
-    CONF_SWITCHES,
     CONNECTION_TYPE_MAC,
     DOMAIN,
+    ENTITY_TYPE_SWITCH,
 )
 
 
@@ -40,13 +43,15 @@ def _entry_data() -> dict:
         CONF_DEVICE_ID: "virtual_device",
         CONF_CONNECTION_TYPE: CONNECTION_TYPE_MAC,
         CONF_CONNECTION_VALUE: "aa:bb:cc:dd:ee:ff",
-        CONF_SWITCHES: [
+        CONF_ENTITIES: [
             {
+                CONF_ENTITY_TYPE: ENTITY_TYPE_SWITCH,
                 CONF_NAME: "Main Power",
                 CONF_KEY: "main_power",
                 CONF_ICON: "mdi:power",
                 CONF_ENTITY_CATEGORY: "",
                 CONF_DEVICE_CLASS: "switch",
+                CONF_INITIAL_VALUE: False,
             }
         ],
     }
@@ -101,6 +106,19 @@ async def test_switch_turns_on_and_off(hass: HomeAssistant) -> None:
         blocking=True,
     )
     assert hass.states.get("switch.main_power").state == STATE_OFF
+
+
+async def test_switch_uses_initial_value_without_restored_state(hass: HomeAssistant) -> None:
+    """Use configured initial value when no restored state exists."""
+    data = _entry_data()
+    data[CONF_ENTITIES][0][CONF_INITIAL_VALUE] = True
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=data)
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("switch.main_power").state == STATE_ON
 
 
 async def test_switch_restores_previous_state(hass: HomeAssistant) -> None:
