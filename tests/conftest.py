@@ -15,3 +15,9 @@ if str(ROOT) not in sys.path:
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Enable custom integrations in all tests."""
+
+
+@pytest.fixture(autouse=True)
+def clean_virtual_yaml(hass: object) -> None:
+    """Remove YAML storage between tests."""
+    Path(hass.config.path("virtual.yaml")).unlink(missing_ok=True)

@@ -17,9 +17,7 @@ testing purposes.
   Assistant device-registry grouping.
 - Configure entity icon, entity category, device class, and type-specific
   options such as units, state class, ranges, options, modes, and brightness.
-
-The internal data model uses stable device IDs and entity keys so YAML
-import/reload support can be added later.
+- Import and export virtual device definitions with `virtual.yaml`.
 
 Example service call:
 
@@ -29,6 +27,36 @@ target:
   entity_id: sensor.virtual_temperature
 data:
   value: "21.5"
+```
+
+## YAML import and export
+
+The integration reads `virtual.yaml` from the Home Assistant config directory
+when Home Assistant starts and when Virtual config entries are set up or
+reloaded. YAML changes are not watched live.
+
+Use the `virtual.import_yaml` service to manually import `virtual.yaml` and
+reload changed entries. Use `virtual.export_yaml` to write the current Virtual
+config entries back to `virtual.yaml`.
+
+Import is non-destructive. Devices in `virtual.yaml` are matched to existing
+Virtual config entries by `device_id`; entities are matched by `key`. Matching
+devices/entities are updated and missing devices/entities are created. Existing
+Virtual devices or entities that are absent from the YAML file are left alone,
+with warning logs noting that they are not managed by `virtual.yaml`.
+
+Example `virtual.yaml`:
+
+```yaml
+devices:
+  - name: YAML Device
+    device_id: virtual_yaml
+    connection_type: none
+    entities:
+      - type: switch
+        name: YAML Switch
+        key: yaml_switch
+        initial_value: true
 ```
 
 ## Installation

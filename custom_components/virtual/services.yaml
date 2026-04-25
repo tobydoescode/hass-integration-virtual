@@ -15,3 +15,11 @@ set_state:
       required: true
       selector:
         text:
+import_yaml:
+  name: Import YAML
+  description: Import virtual devices from virtual.yaml in the Home Assistant config directory and reload changed entries.
+  fields: {}
+export_yaml:
+  name: Export YAML
+  description: Export virtual devices to virtual.yaml in the Home Assistant config directory.
+  fields: {}
