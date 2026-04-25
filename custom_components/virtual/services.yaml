@@ -1,0 +1,17 @@
+set_state:
+  name: Set state
+  description: Set the state of a virtual entity. Button entities are not supported.
+  fields:
+    entity_id:
+      name: Entity ID
+      description: Virtual entity ID to update.
+      required: true
+      selector:
+        entity:
+          integration: virtual
+    value:
+      name: Value
+      description: New state value. The value is coerced according to the entity type.
+      required: true
+      selector:
+        text:

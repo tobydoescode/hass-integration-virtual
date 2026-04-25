@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.const import CONF_NAME
+from homeassistant.core import HomeAssistant
 
 from .const import (
     CONF_DEVICE_CLASS,
@@ -14,6 +15,15 @@ from .const import (
     CONF_KEY,
 )
 from .models import build_device_info, entity_unique_id
+
+DATA_ENTITY_REGISTRY = "entity_registry"
+
+
+def virtual_entity_registry(hass: HomeAssistant) -> dict[str, "VirtualEntityBase"]:
+    """Return the runtime virtual entity registry."""
+    from .const import DOMAIN
+
+    return hass.data.setdefault(DOMAIN, {}).setdefault(DATA_ENTITY_REGISTRY, {})
 
 
 class VirtualEntityBase:
@@ -33,6 +43,16 @@ class VirtualEntityBase:
         self._attr_entity_category = definition.get(CONF_ENTITY_CATEGORY) or None
         self._attr_device_class = definition.get(CONF_DEVICE_CLASS) or None
         self._attr_device_info = build_device_info(device)
+
+    async def async_added_to_hass(self) -> None:
+        """Register the entity for virtual services."""
+        await super().async_added_to_hass()
+        virtual_entity_registry(self.hass)[self.entity_id] = self
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Unregister the entity from virtual services."""
+        virtual_entity_registry(self.hass).pop(self.entity_id, None)
+        await super().async_will_remove_from_hass()
 
     async def async_set_virtual_state(self, value: Any) -> None:
         """Set state from the virtual.set_state service."""
