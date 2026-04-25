@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime, time
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.components.switch import SwitchDeviceClass
+from homeassistant.components.number import NumberMode
+from homeassistant.components.sensor import SensorStateClass
+from homeassistant.components.text import TextMode
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_NAME, Platform
 from homeassistant.core import callback
@@ -13,46 +16,74 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import entity_registry as er
 
 from .const import (
+    CONF_BRIGHTNESS,
     CONF_CONNECTION_TYPE,
     CONF_CONNECTION_VALUE,
     CONF_CUSTOM_CONNECTION_TYPE,
     CONF_DEVICE_CLASS,
     CONF_DEVICE_ID,
+    CONF_ENTITIES,
     CONF_ENTITY_CATEGORY,
+    CONF_ENTITY_TYPE,
     CONF_ICON,
+    CONF_INITIAL_VALUE,
     CONF_KEY,
-    CONF_SWITCHES,
+    CONF_MAX,
+    CONF_MIN,
+    CONF_MODE,
+    CONF_NATIVE_UNIT_OF_MEASUREMENT,
+    CONF_OPTIONS,
+    CONF_STATE_CLASS,
+    CONF_STEP,
+    CONF_VALUE_TYPE,
     CONNECTION_TYPE_CUSTOM,
     CONNECTION_TYPE_MAC,
     CONNECTION_TYPE_NONE,
     DOMAIN,
+    ENTITY_TYPE_BINARY_SENSOR,
+    ENTITY_TYPE_BUTTON,
+    ENTITY_TYPE_DATE,
+    ENTITY_TYPE_DATETIME,
+    ENTITY_TYPE_LIGHT,
+    ENTITY_TYPE_NUMBER,
+    ENTITY_TYPE_SELECT,
+    ENTITY_TYPE_SENSOR,
+    ENTITY_TYPE_SWITCH,
+    ENTITY_TYPE_TEXT,
+    ENTITY_TYPE_TIME,
+    SUPPORTED_ENTITY_TYPES,
 )
 from .models import (
     VirtualValidationError,
+    coerce_entity_value,
+    entity_unique_id,
     generate_device_id,
-    generate_switch_key,
+    generate_entity_key,
     normalize_connection,
-    validate_unique_switch_key,
+    validate_unique_entity_key,
 )
 
-CONF_ADD_SWITCH = "add_switch"
 CONF_ACTION = "action"
-CONF_SWITCH_KEYS = "switch_keys"
+CONF_ADD_ENTITY = "add_entity"
 CONF_CONFIRM = "confirm"
+CONF_ENTITY_KEYS = "entity_keys"
 
 ACTION_EDIT_DEVICE = "edit_device"
-ACTION_ADD_SWITCH = "add_switch"
-ACTION_EDIT_SWITCH = "edit_switch"
-ACTION_REMOVE_SWITCH = "remove_switch"
+ACTION_ADD_ENTITY = "add_entity"
+ACTION_EDIT_ENTITY = "edit_entity"
+ACTION_REMOVE_ENTITY = "remove_entity"
 
 CONNECTION_TYPES = [CONNECTION_TYPE_NONE, CONNECTION_TYPE_MAC, CONNECTION_TYPE_CUSTOM]
 ENTITY_CATEGORIES = ["", "config", "diagnostic"]
-SWITCH_DEVICE_CLASSES = ["", *[device_class.value for device_class in SwitchDeviceClass]]
+VALUE_TYPES = ["string", "number"]
+NUMBER_MODES = [mode.value for mode in NumberMode]
+TEXT_MODES = [mode.value for mode in TextMode]
+SENSOR_STATE_CLASSES = ["", *[state_class.value for state_class in SensorStateClass]]
 OPTIONS_ACTIONS = [
     ACTION_EDIT_DEVICE,
-    ACTION_ADD_SWITCH,
-    ACTION_EDIT_SWITCH,
-    ACTION_REMOVE_SWITCH,
+    ACTION_ADD_ENTITY,
+    ACTION_EDIT_ENTITY,
+    ACTION_REMOVE_ENTITY,
 ]
 
 
@@ -79,8 +110,18 @@ def _device_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     )
 
 
-def _switch_schema(defaults: dict[str, Any] | None = None, include_key: bool = True) -> vol.Schema:
-    """Return schema for switch details."""
+def _entity_type_schema() -> vol.Schema:
+    """Return schema for choosing an entity type."""
+    return vol.Schema({vol.Required(CONF_ENTITY_TYPE): vol.In(SUPPORTED_ENTITY_TYPES)})
+
+
+def _entity_schema(
+    entity_type: str,
+    defaults: dict[str, Any] | None = None,
+    *,
+    include_key: bool = True,
+) -> vol.Schema:
+    """Return schema for entity details."""
     defaults = defaults or {}
     fields: dict[Any, Any] = {
         vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
@@ -94,12 +135,73 @@ def _switch_schema(defaults: dict[str, Any] | None = None, include_key: bool = T
                 CONF_ENTITY_CATEGORY,
                 default=defaults.get(CONF_ENTITY_CATEGORY, ""),
             ): vol.In(ENTITY_CATEGORIES),
-            vol.Optional(
-                CONF_DEVICE_CLASS,
-                default=defaults.get(CONF_DEVICE_CLASS, ""),
-            ): vol.In(SWITCH_DEVICE_CLASSES),
+            vol.Optional(CONF_DEVICE_CLASS, default=defaults.get(CONF_DEVICE_CLASS, "")): str,
         }
     )
+
+    if entity_type in {ENTITY_TYPE_SWITCH, ENTITY_TYPE_BINARY_SENSOR}:
+        fields[vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, False))] = bool
+    elif entity_type == ENTITY_TYPE_SENSOR:
+        fields.update(
+            {
+                vol.Required(
+                    CONF_VALUE_TYPE,
+                    default=defaults.get(CONF_VALUE_TYPE, "string"),
+                ): vol.In(VALUE_TYPES),
+                vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, "")): str,
+                vol.Optional(
+                    CONF_NATIVE_UNIT_OF_MEASUREMENT,
+                    default=defaults.get(CONF_NATIVE_UNIT_OF_MEASUREMENT, ""),
+                ): str,
+                vol.Optional(
+                    CONF_STATE_CLASS,
+                    default=defaults.get(CONF_STATE_CLASS, ""),
+                ): vol.In(SENSOR_STATE_CLASSES),
+            }
+        )
+    elif entity_type == ENTITY_TYPE_LIGHT:
+        fields.update(
+            {
+                vol.Required(
+                    CONF_INITIAL_VALUE,
+                    default=defaults.get(CONF_INITIAL_VALUE, False),
+                ): bool,
+                vol.Optional(CONF_BRIGHTNESS, default=defaults.get(CONF_BRIGHTNESS, "")): str,
+            }
+        )
+    elif entity_type == ENTITY_TYPE_NUMBER:
+        fields.update(
+            {
+                vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, 0)): vol.Coerce(float),
+                vol.Required(CONF_MIN, default=defaults.get(CONF_MIN, 0)): vol.Coerce(float),
+                vol.Required(CONF_MAX, default=defaults.get(CONF_MAX, 100)): vol.Coerce(float),
+                vol.Required(CONF_STEP, default=defaults.get(CONF_STEP, 1)): vol.Coerce(float),
+                vol.Optional(
+                    CONF_NATIVE_UNIT_OF_MEASUREMENT,
+                    default=defaults.get(CONF_NATIVE_UNIT_OF_MEASUREMENT, ""),
+                ): str,
+                vol.Required(CONF_MODE, default=defaults.get(CONF_MODE, NumberMode.AUTO.value)): vol.In(NUMBER_MODES),
+            }
+        )
+    elif entity_type == ENTITY_TYPE_SELECT:
+        fields.update(
+            {
+                vol.Required(CONF_OPTIONS, default=_options_default(defaults)): str,
+                vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, "")): str,
+            }
+        )
+    elif entity_type == ENTITY_TYPE_TEXT:
+        fields.update(
+            {
+                vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, "")): str,
+                vol.Required(CONF_MIN, default=defaults.get(CONF_MIN, 0)): vol.Coerce(int),
+                vol.Required(CONF_MAX, default=defaults.get(CONF_MAX, 255)): vol.Coerce(int),
+                vol.Required(CONF_MODE, default=defaults.get(CONF_MODE, TextMode.TEXT.value)): vol.In(TEXT_MODES),
+            }
+        )
+    elif entity_type in {ENTITY_TYPE_DATE, ENTITY_TYPE_DATETIME, ENTITY_TYPE_TIME}:
+        fields[vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, ""))] = str
+
     return vol.Schema(fields)
 
 
@@ -111,7 +213,8 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the config flow."""
         self._device: dict[str, Any] = {}
-        self._switches: list[dict[str, Any]] = []
+        self._entities: list[dict[str, Any]] = []
+        self._selected_entity_type: str | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle virtual device details."""
@@ -137,58 +240,59 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
                     }
                     await self.async_set_unique_id(device_id)
                     self._abort_if_unique_id_configured()
-                    return await self.async_step_switch_menu()
+                    return await self.async_step_entity_menu()
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=_device_schema(),
-            errors=errors,
-        )
+        return self.async_show_form(step_id="user", data_schema=_device_schema(), errors=errors)
 
-    async def async_step_switch_menu(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Ask whether to add another switch."""
+    async def async_step_entity_menu(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Ask whether to add another entity."""
         if user_input is not None:
-            if user_input[CONF_ADD_SWITCH]:
-                return await self.async_step_add_switch()
+            if user_input[CONF_ADD_ENTITY]:
+                return await self.async_step_add_entity_type()
             return self.async_create_entry(
                 title=self._device[CONF_NAME],
-                data={**self._device, CONF_SWITCHES: self._switches},
+                data={**self._device, CONF_ENTITIES: self._entities},
             )
 
         return self.async_show_form(
-            step_id="switch_menu",
-            data_schema=vol.Schema({vol.Required(CONF_ADD_SWITCH, default=False): bool}),
+            step_id="entity_menu",
+            data_schema=vol.Schema({vol.Required(CONF_ADD_ENTITY, default=False): bool}),
         )
 
-    async def async_step_add_switch(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Add a switch to the virtual device."""
+    async def async_step_add_entity_type(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Choose the entity type to add."""
+        if user_input is not None:
+            self._selected_entity_type = user_input[CONF_ENTITY_TYPE]
+            return await self.async_step_add_entity()
+
+        return self.async_show_form(step_id="add_entity_type", data_schema=_entity_type_schema())
+
+    async def async_step_add_entity(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Add an entity to the virtual device."""
+        entity_type = self._selected_entity_type
+        if entity_type is None:
+            return await self.async_step_add_entity_type()
+
         errors: dict[str, str] = {}
         if user_input is not None:
-            key = (user_input.get(CONF_KEY) or "").strip()
-            if not key:
-                key = generate_switch_key(
-                    user_input[CONF_NAME],
-                    {switch[CONF_KEY] for switch in self._switches},
-                )
             try:
-                validate_unique_switch_key(key, self._switches)
+                entity = _entity_from_input(
+                    entity_type,
+                    user_input,
+                    self._entities,
+                )
             except VirtualValidationError as err:
                 errors["base"] = str(err)
             else:
-                self._switches.append(
-                    {
-                        CONF_NAME: user_input[CONF_NAME],
-                        CONF_KEY: key,
-                        CONF_ICON: user_input.get(CONF_ICON, ""),
-                        CONF_ENTITY_CATEGORY: user_input.get(CONF_ENTITY_CATEGORY, ""),
-                        CONF_DEVICE_CLASS: user_input.get(CONF_DEVICE_CLASS, ""),
-                    }
-                )
-                return await self.async_step_switch_menu()
+                self._entities.append(entity)
+                self._selected_entity_type = None
+                return await self.async_step_entity_menu()
 
         return self.async_show_form(
-            step_id="add_switch",
-            data_schema=_switch_schema(),
+            step_id="add_entity",
+            data_schema=_entity_schema(entity_type),
             errors=errors,
         )
 
@@ -211,7 +315,8 @@ class VirtualOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self._config_entry = config_entry
-        self._selected_switch_key: str | None = None
+        self._selected_entity_key: str | None = None
+        self._selected_entity_type: str | None = None
         self._selected_remove_keys: list[str] = []
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -220,12 +325,12 @@ class VirtualOptionsFlow(OptionsFlow):
             action = user_input[CONF_ACTION]
             if action == ACTION_EDIT_DEVICE:
                 return await self.async_step_edit_device()
-            if action == ACTION_ADD_SWITCH:
-                return await self.async_step_add_switch()
-            if action == ACTION_EDIT_SWITCH:
-                return await self.async_step_select_switch()
-            if action == ACTION_REMOVE_SWITCH:
-                return await self.async_step_remove_switch()
+            if action == ACTION_ADD_ENTITY:
+                return await self.async_step_add_entity_type()
+            if action == ACTION_EDIT_ENTITY:
+                return await self.async_step_select_entity()
+            if action == ACTION_REMOVE_ENTITY:
+                return await self.async_step_remove_entity()
 
         return self.async_show_form(
             step_id="init",
@@ -250,7 +355,7 @@ class VirtualOptionsFlow(OptionsFlow):
                     CONF_NAME: user_input[CONF_NAME],
                     CONF_DEVICE_ID: current[CONF_DEVICE_ID],
                     **connection,
-                    CONF_SWITCHES: current.get(CONF_SWITCHES, []),
+                    CONF_ENTITIES: current.get(CONF_ENTITIES, []),
                 }
                 self.hass.config_entries.async_update_entry(
                     self._config_entry,
@@ -265,138 +370,248 @@ class VirtualOptionsFlow(OptionsFlow):
             errors=errors,
         )
 
-    async def async_step_add_switch(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Add a switch to an existing virtual device."""
+    async def async_step_add_entity_type(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Choose the entity type to add."""
+        if user_input is not None:
+            self._selected_entity_type = user_input[CONF_ENTITY_TYPE]
+            return await self.async_step_add_entity()
+
+        return self.async_show_form(step_id="add_entity_type", data_schema=_entity_type_schema())
+
+    async def async_step_add_entity(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Add an entity to an existing virtual device."""
+        entity_type = self._selected_entity_type
+        if entity_type is None:
+            return await self.async_step_add_entity_type()
+
         errors: dict[str, str] = {}
         current = self._config_entry.data
-        switches = list(current.get(CONF_SWITCHES, []))
+        entities = list(current.get(CONF_ENTITIES, []))
         if user_input is not None:
-            key = (user_input.get(CONF_KEY) or "").strip()
-            if not key:
-                key = generate_switch_key(
-                    user_input[CONF_NAME],
-                    {switch[CONF_KEY] for switch in switches},
-                )
             try:
-                validate_unique_switch_key(key, switches)
+                entity = _entity_from_input(entity_type, user_input, entities)
             except VirtualValidationError as err:
                 errors["base"] = str(err)
             else:
-                switches.append(_switch_from_input(user_input, key))
-                self._update_entry_data({**current, CONF_SWITCHES: switches})
+                entities.append(entity)
+                self._update_entry_data({**current, CONF_ENTITIES: entities})
+                self._selected_entity_type = None
                 return self.async_create_entry(data={})
 
         return self.async_show_form(
-            step_id="add_switch",
-            data_schema=_switch_schema(),
+            step_id="add_entity",
+            data_schema=_entity_schema(entity_type),
             errors=errors,
         )
 
-    async def async_step_select_switch(
+    async def async_step_select_entity(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Select a switch to edit."""
-        switches = self._config_entry.data.get(CONF_SWITCHES, [])
-        key_options = [switch[CONF_KEY] for switch in switches]
+        """Select an entity to edit."""
+        entities = self._config_entry.data.get(CONF_ENTITIES, [])
+        key_options = [entity[CONF_KEY] for entity in entities]
         if user_input is not None:
-            self._selected_switch_key = user_input[CONF_KEY]
-            return await self.async_step_edit_switch()
+            self._selected_entity_key = user_input[CONF_KEY]
+            return await self.async_step_edit_entity()
 
         return self.async_show_form(
-            step_id="select_switch",
+            step_id="select_entity",
             data_schema=vol.Schema({vol.Required(CONF_KEY): vol.In(key_options)}),
         )
 
-    async def async_step_edit_switch(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Edit switch metadata."""
+    async def async_step_edit_entity(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Edit entity metadata and type-specific fields."""
         current = self._config_entry.data
-        switches = list(current.get(CONF_SWITCHES, []))
-        switch = self._switch_by_key(self._selected_switch_key)
+        entities = list(current.get(CONF_ENTITIES, []))
+        entity = self._entity_by_key(self._selected_entity_key)
+        entity_type = entity[CONF_ENTITY_TYPE]
+
+        errors: dict[str, str] = {}
         if user_input is not None:
-            updated_switches = [
-                _switch_from_input(user_input, existing[CONF_KEY])
-                if existing[CONF_KEY] == self._selected_switch_key
-                else existing
-                for existing in switches
-            ]
-            self._update_entry_data({**current, CONF_SWITCHES: updated_switches})
-            return self.async_create_entry(data={})
+            try:
+                updated = _entity_from_input(
+                    entity_type,
+                    user_input,
+                    [candidate for candidate in entities if candidate[CONF_KEY] != entity[CONF_KEY]],
+                    key_override=entity[CONF_KEY],
+                )
+            except VirtualValidationError as err:
+                errors["base"] = str(err)
+            else:
+                updated_entities = [
+                    updated if existing[CONF_KEY] == entity[CONF_KEY] else existing
+                    for existing in entities
+                ]
+                self._update_entry_data({**current, CONF_ENTITIES: updated_entities})
+                return self.async_create_entry(data={})
 
         return self.async_show_form(
-            step_id="edit_switch",
-            data_schema=_switch_schema(switch, include_key=False),
+            step_id="edit_entity",
+            data_schema=_entity_schema(entity_type, entity, include_key=False),
+            errors=errors,
         )
 
-    async def async_step_remove_switch(
+    async def async_step_remove_entity(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Select switches to remove."""
-        switches = self._config_entry.data.get(CONF_SWITCHES, [])
-        key_options = [switch[CONF_KEY] for switch in switches]
+        """Select entities to remove."""
+        entities = self._config_entry.data.get(CONF_ENTITIES, [])
+        key_options = [entity[CONF_KEY] for entity in entities]
         if user_input is not None:
-            self._selected_remove_keys = list(user_input[CONF_SWITCH_KEYS])
-            return await self.async_step_confirm_remove_switch()
+            self._selected_remove_keys = list(user_input[CONF_ENTITY_KEYS])
+            return await self.async_step_confirm_remove_entity()
 
         return self.async_show_form(
-            step_id="remove_switch",
+            step_id="remove_entity",
             data_schema=vol.Schema(
-                {vol.Required(CONF_SWITCH_KEYS): vol.All(list, [vol.In(key_options)])}
+                {vol.Required(CONF_ENTITY_KEYS): vol.All(list, [vol.In(key_options)])}
             ),
         )
 
-    async def async_step_confirm_remove_switch(
+    async def async_step_confirm_remove_entity(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Confirm hard removal of switches."""
+        """Confirm hard removal of entities."""
         if user_input is not None:
             if user_input[CONF_CONFIRM]:
-                self._remove_switches(self._selected_remove_keys)
+                self._remove_entities(self._selected_remove_keys)
             return self.async_create_entry(data={})
 
         return self.async_show_form(
-            step_id="confirm_remove_switch",
+            step_id="confirm_remove_entity",
             data_schema=vol.Schema({vol.Required(CONF_CONFIRM, default=False): bool}),
         )
 
-    def _switch_by_key(self, key: str | None) -> dict[str, Any]:
-        """Return a switch definition by key."""
-        for switch in self._config_entry.data.get(CONF_SWITCHES, []):
-            if switch[CONF_KEY] == key:
-                return switch
-        raise VirtualValidationError("unknown_switch")
+    def _entity_by_key(self, key: str | None) -> dict[str, Any]:
+        """Return an entity definition by key."""
+        for entity in self._config_entry.data.get(CONF_ENTITIES, []):
+            if entity[CONF_KEY] == key:
+                return entity
+        raise VirtualValidationError("unknown_entity")
 
-    def _remove_switches(self, keys: list[str]) -> None:
-        """Remove switch definitions and matching entity registry entries."""
+    def _remove_entities(self, keys: list[str]) -> None:
+        """Remove entity definitions and matching entity registry entries."""
         current = self._config_entry.data
         remove_keys = set(keys)
         entity_registry = er.async_get(self.hass)
-        for key in remove_keys:
-            unique_id = f"{current[CONF_DEVICE_ID]}_{key}"
+        for entity in current.get(CONF_ENTITIES, []):
+            if entity[CONF_KEY] not in remove_keys:
+                continue
+            unique_id = entity_unique_id(current[CONF_DEVICE_ID], entity[CONF_KEY])
             if entity_id := entity_registry.async_get_entity_id(
-                Platform.SWITCH,
+                Platform(entity[CONF_ENTITY_TYPE]),
                 DOMAIN,
                 unique_id,
             ):
                 entity_registry.async_remove(entity_id)
 
-        switches = [
-            switch
-            for switch in current.get(CONF_SWITCHES, [])
-            if switch[CONF_KEY] not in remove_keys
+        entities = [
+            entity
+            for entity in current.get(CONF_ENTITIES, [])
+            if entity[CONF_KEY] not in remove_keys
         ]
-        self._update_entry_data({**current, CONF_SWITCHES: switches})
+        self._update_entry_data({**current, CONF_ENTITIES: entities})
 
     def _update_entry_data(self, data: dict[str, Any]) -> None:
         """Update the config entry data."""
         self.hass.config_entries.async_update_entry(self._config_entry, data=data)
 
 
-def _switch_from_input(user_input: dict[str, Any], key: str) -> dict[str, Any]:
-    """Build a switch definition from flow input."""
-    return {
+def _entity_from_input(
+    entity_type: str,
+    user_input: dict[str, Any],
+    existing_entities: list[dict[str, Any]],
+    *,
+    key_override: str | None = None,
+) -> dict[str, Any]:
+    """Build an entity definition from flow input."""
+    key = key_override or (user_input.get(CONF_KEY) or "").strip()
+    if not key:
+        key = generate_entity_key(
+            user_input[CONF_NAME],
+            {entity[CONF_KEY] for entity in existing_entities},
+        )
+    validate_unique_entity_key(key, existing_entities)
+
+    entity: dict[str, Any] = {
+        CONF_ENTITY_TYPE: entity_type,
         CONF_NAME: user_input[CONF_NAME],
         CONF_KEY: key,
         CONF_ICON: user_input.get(CONF_ICON, ""),
         CONF_ENTITY_CATEGORY: user_input.get(CONF_ENTITY_CATEGORY, ""),
         CONF_DEVICE_CLASS: user_input.get(CONF_DEVICE_CLASS, ""),
     }
+
+    if entity_type in {ENTITY_TYPE_SWITCH, ENTITY_TYPE_BINARY_SENSOR}:
+        entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+    elif entity_type == ENTITY_TYPE_SENSOR:
+        entity[CONF_VALUE_TYPE] = user_input[CONF_VALUE_TYPE]
+        entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+        entity[CONF_NATIVE_UNIT_OF_MEASUREMENT] = user_input.get(
+            CONF_NATIVE_UNIT_OF_MEASUREMENT, ""
+        )
+        entity[CONF_STATE_CLASS] = user_input.get(CONF_STATE_CLASS, "")
+    elif entity_type == ENTITY_TYPE_LIGHT:
+        entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+        brightness = user_input.get(CONF_BRIGHTNESS, "")
+        if brightness != "":
+            brightness_int = int(brightness)
+            if brightness_int < 1 or brightness_int > 255:
+                raise VirtualValidationError("invalid_brightness")
+            entity[CONF_BRIGHTNESS] = brightness_int
+    elif entity_type == ENTITY_TYPE_NUMBER:
+        entity[CONF_MIN] = float(user_input[CONF_MIN])
+        entity[CONF_MAX] = float(user_input[CONF_MAX])
+        entity[CONF_STEP] = float(user_input[CONF_STEP])
+        if entity[CONF_MIN] > entity[CONF_MAX] or entity[CONF_STEP] <= 0:
+            raise VirtualValidationError("invalid_number")
+        entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+        entity[CONF_NATIVE_UNIT_OF_MEASUREMENT] = user_input.get(
+            CONF_NATIVE_UNIT_OF_MEASUREMENT, ""
+        )
+        entity[CONF_MODE] = user_input[CONF_MODE]
+    elif entity_type == ENTITY_TYPE_SELECT:
+        entity[CONF_OPTIONS] = _parse_options(user_input[CONF_OPTIONS])
+        entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+    elif entity_type == ENTITY_TYPE_TEXT:
+        entity[CONF_MIN] = int(user_input[CONF_MIN])
+        entity[CONF_MAX] = int(user_input[CONF_MAX])
+        if entity[CONF_MIN] > entity[CONF_MAX]:
+            raise VirtualValidationError("invalid_text")
+        entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+        entity[CONF_MODE] = user_input[CONF_MODE]
+    elif entity_type == ENTITY_TYPE_DATE:
+        entity[CONF_INITIAL_VALUE] = _iso(coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE]))
+    elif entity_type == ENTITY_TYPE_TIME:
+        entity[CONF_INITIAL_VALUE] = _iso(coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE]))
+    elif entity_type == ENTITY_TYPE_DATETIME:
+        entity[CONF_INITIAL_VALUE] = _iso(coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE]))
+
+    return entity
+
+
+def _parse_options(value: str | list[str]) -> list[str]:
+    """Parse select options from comma-separated text or a list."""
+    if isinstance(value, list):
+        options = [str(option).strip() for option in value]
+    else:
+        options = [option.strip() for option in value.split(",")]
+    options = [option for option in options if option]
+    if not options:
+        raise VirtualValidationError("invalid_options")
+    return options
+
+
+def _options_default(defaults: dict[str, Any]) -> str:
+    """Return select options default for forms."""
+    options = defaults.get(CONF_OPTIONS, "")
+    if isinstance(options, list):
+        return ", ".join(options)
+    return str(options)
+
+
+def _iso(value: date | datetime | time) -> str:
+    """Return ISO text for date-like values."""
+    return value.isoformat()
