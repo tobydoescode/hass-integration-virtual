@@ -19,7 +19,7 @@ from .models import build_device_info, entity_unique_id
 DATA_ENTITY_REGISTRY = "entity_registry"
 
 
-def virtual_entity_registry(hass: HomeAssistant) -> dict[str, "VirtualEntityBase"]:
+def virtual_entity_registry(hass: HomeAssistant) -> dict[str, VirtualEntityBase]:
     """Return the runtime virtual entity registry."""
     from .const import DOMAIN
 

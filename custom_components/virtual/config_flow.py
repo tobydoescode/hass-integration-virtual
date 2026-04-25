@@ -41,7 +41,6 @@ from .const import (
     CONNECTION_TYPE_NONE,
     DOMAIN,
     ENTITY_TYPE_BINARY_SENSOR,
-    ENTITY_TYPE_BUTTON,
     ENTITY_TYPE_DATE,
     ENTITY_TYPE_DATETIME,
     ENTITY_TYPE_LIGHT,
@@ -140,7 +139,12 @@ def _entity_schema(
     )
 
     if entity_type in {ENTITY_TYPE_SWITCH, ENTITY_TYPE_BINARY_SENSOR}:
-        fields[vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, False))] = bool
+        fields[
+            vol.Required(
+                CONF_INITIAL_VALUE,
+                default=defaults.get(CONF_INITIAL_VALUE, False),
+            )
+        ] = bool
     elif entity_type == ENTITY_TYPE_SENSOR:
         fields.update(
             {
@@ -172,7 +176,10 @@ def _entity_schema(
     elif entity_type == ENTITY_TYPE_NUMBER:
         fields.update(
             {
-                vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, 0)): vol.Coerce(float),
+                vol.Required(
+                    CONF_INITIAL_VALUE,
+                    default=defaults.get(CONF_INITIAL_VALUE, 0),
+                ): vol.Coerce(float),
                 vol.Required(CONF_MIN, default=defaults.get(CONF_MIN, 0)): vol.Coerce(float),
                 vol.Required(CONF_MAX, default=defaults.get(CONF_MAX, 100)): vol.Coerce(float),
                 vol.Required(CONF_STEP, default=defaults.get(CONF_STEP, 1)): vol.Coerce(float),
@@ -180,7 +187,10 @@ def _entity_schema(
                     CONF_NATIVE_UNIT_OF_MEASUREMENT,
                     default=defaults.get(CONF_NATIVE_UNIT_OF_MEASUREMENT, ""),
                 ): str,
-                vol.Required(CONF_MODE, default=defaults.get(CONF_MODE, NumberMode.AUTO.value)): vol.In(NUMBER_MODES),
+                vol.Required(
+                    CONF_MODE,
+                    default=defaults.get(CONF_MODE, NumberMode.AUTO.value),
+                ): vol.In(NUMBER_MODES),
             }
         )
     elif entity_type == ENTITY_TYPE_SELECT:
@@ -196,7 +206,10 @@ def _entity_schema(
                 vol.Required(CONF_INITIAL_VALUE, default=defaults.get(CONF_INITIAL_VALUE, "")): str,
                 vol.Required(CONF_MIN, default=defaults.get(CONF_MIN, 0)): vol.Coerce(int),
                 vol.Required(CONF_MAX, default=defaults.get(CONF_MAX, 255)): vol.Coerce(int),
-                vol.Required(CONF_MODE, default=defaults.get(CONF_MODE, TextMode.TEXT.value)): vol.In(TEXT_MODES),
+                vol.Required(
+                    CONF_MODE,
+                    default=defaults.get(CONF_MODE, TextMode.TEXT.value),
+                ): vol.In(TEXT_MODES),
             }
         )
     elif entity_type in {ENTITY_TYPE_DATE, ENTITY_TYPE_DATETIME, ENTITY_TYPE_TIME}:
@@ -431,10 +444,13 @@ class VirtualOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
+                other_entities = [
+                    candidate for candidate in entities if candidate[CONF_KEY] != entity[CONF_KEY]
+                ]
                 updated = _entity_from_input(
                     entity_type,
                     user_input,
-                    [candidate for candidate in entities if candidate[CONF_KEY] != entity[CONF_KEY]],
+                    other_entities,
                     key_override=entity[CONF_KEY],
                 )
             except VirtualValidationError as err:
@@ -582,12 +598,10 @@ def _entity_from_input(
             raise VirtualValidationError("invalid_text")
         entity[CONF_INITIAL_VALUE] = coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
         entity[CONF_MODE] = user_input[CONF_MODE]
-    elif entity_type == ENTITY_TYPE_DATE:
-        entity[CONF_INITIAL_VALUE] = _iso(coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE]))
-    elif entity_type == ENTITY_TYPE_TIME:
-        entity[CONF_INITIAL_VALUE] = _iso(coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE]))
-    elif entity_type == ENTITY_TYPE_DATETIME:
-        entity[CONF_INITIAL_VALUE] = _iso(coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE]))
+    elif entity_type in (ENTITY_TYPE_DATE, ENTITY_TYPE_TIME, ENTITY_TYPE_DATETIME):
+        entity[CONF_INITIAL_VALUE] = _iso(
+            coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
+        )
 
     return entity
 

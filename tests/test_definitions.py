@@ -12,13 +12,14 @@ from custom_components.virtual.const import (
     CONF_DEVICE_ID,
     CONF_ENTITIES,
     CONF_ENTITY_TYPE,
-    CONF_INITIAL_VALUE,
     CONF_KEY,
     CONF_MAX,
     CONF_MIN,
     CONF_OPTIONS,
     CONF_STEP,
     CONF_VALUE_TYPE,
+    CONNECTION_TYPE_MAC,
+    CONNECTION_TYPE_NONE,
     ENTITY_TYPE_BINARY_SENSOR,
     ENTITY_TYPE_DATE,
     ENTITY_TYPE_DATETIME,
@@ -28,8 +29,6 @@ from custom_components.virtual.const import (
     ENTITY_TYPE_SWITCH,
     ENTITY_TYPE_TEXT,
     ENTITY_TYPE_TIME,
-    CONNECTION_TYPE_MAC,
-    CONNECTION_TYPE_NONE,
 )
 from custom_components.virtual.models import (
     VirtualValidationError,
@@ -54,9 +53,7 @@ def test_generate_device_id_uses_virtual_prefix() -> None:
 
 def test_generate_entity_key_slugs_name_and_avoids_collisions() -> None:
     """Generate readable entity keys with suffixes for collisions."""
-    assert generate_entity_key("Test Entity", {"test_entity", "test_entity_2"}) == (
-        "test_entity_3"
-    )
+    assert generate_entity_key("Test Entity", {"test_entity", "test_entity_2"}) == ("test_entity_3")
 
 
 def test_generate_entity_key_uses_fallback_for_empty_names() -> None:

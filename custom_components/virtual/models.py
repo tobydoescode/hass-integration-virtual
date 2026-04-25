@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time
 import re
+from datetime import date, datetime, time
 from typing import Any
 from uuid import uuid4
 
@@ -23,20 +23,20 @@ from .const import (
     CONF_MIN,
     CONF_OPTIONS,
     CONF_VALUE_TYPE,
+    CONNECTION_TYPE_CUSTOM,
+    CONNECTION_TYPE_MAC,
+    CONNECTION_TYPE_NONE,
+    DOMAIN,
     ENTITY_TYPE_BINARY_SENSOR,
     ENTITY_TYPE_DATE,
     ENTITY_TYPE_DATETIME,
     ENTITY_TYPE_LIGHT,
     ENTITY_TYPE_NUMBER,
     ENTITY_TYPE_SELECT,
-    ENTITY_TYPE_SWITCH,
     ENTITY_TYPE_SENSOR,
+    ENTITY_TYPE_SWITCH,
     ENTITY_TYPE_TEXT,
     ENTITY_TYPE_TIME,
-    CONNECTION_TYPE_CUSTOM,
-    CONNECTION_TYPE_MAC,
-    CONNECTION_TYPE_NONE,
-    DOMAIN,
     MANUFACTURER,
 )
 
@@ -112,7 +112,9 @@ def coerce_entity_value(definition: dict[str, Any], value: Any) -> Any:
             raise VirtualValidationError("invalid_text")
         return text
     if entity_type == ENTITY_TYPE_DATE:
-        return value if isinstance(value, date) and not isinstance(value, datetime) else date.fromisoformat(str(value))
+        if isinstance(value, date) and not isinstance(value, datetime):
+            return value
+        return date.fromisoformat(str(value))
     if entity_type == ENTITY_TYPE_TIME:
         return value if isinstance(value, time) else time.fromisoformat(str(value))
     if entity_type == ENTITY_TYPE_DATETIME:

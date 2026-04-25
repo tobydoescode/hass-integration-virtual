@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
+from homeassistant.components.button import SERVICE_PRESS
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
-    DOMAIN as LIGHT_DOMAIN,
     SERVICE_TURN_ON,
 )
-from homeassistant.const import ATTR_ENTITY_ID, CONF_NAME, STATE_OFF, STATE_ON
+from homeassistant.components.light import (
+    DOMAIN as LIGHT_DOMAIN,
+)
+from homeassistant.const import ATTR_ENTITY_ID, CONF_NAME, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry

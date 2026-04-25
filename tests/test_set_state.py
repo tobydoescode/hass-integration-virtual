@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from homeassistant.const import CONF_NAME, STATE_OFF, STATE_ON
+from homeassistant.const import STATE_OFF
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry

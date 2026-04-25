@@ -12,31 +12,54 @@
           "custom_connection_type": "Custom connection type"
         }
       },
-      "switch_menu": {
-        "title": "Add switches",
-        "description": "Add switches to this virtual device.",
+      "entity_menu": {
+        "title": "Add entities",
+        "description": "Add entities to this virtual device.",
         "data": {
-          "add_switch": "Add a switch"
+          "add_entity": "Add an entity"
         }
       },
-      "add_switch": {
-        "title": "Add switch",
-        "description": "Define a virtual switch.",
+      "add_entity_type": {
+        "title": "Choose entity type",
+        "description": "Choose the type of virtual entity to add.",
+        "data": {
+          "type": "Entity type"
+        }
+      },
+      "add_entity": {
+        "title": "Add entity",
+        "description": "Define a virtual entity.",
         "data": {
           "name": "Name",
           "key": "Key",
           "icon": "Icon",
           "entity_category": "Entity category",
-          "device_class": "Device class"
+          "device_class": "Device class",
+          "initial_value": "Initial value",
+          "value_type": "Value type",
+          "native_unit_of_measurement": "Unit of measurement",
+          "state_class": "State class",
+          "min": "Minimum",
+          "max": "Maximum",
+          "step": "Step",
+          "mode": "Mode",
+          "options": "Options",
+          "brightness": "Brightness"
         }
       }
     },
     "error": {
       "duplicate_device_id": "A virtual device with this ID already exists.",
-      "duplicate_switch_key": "A switch with this key already exists on this device.",
+      "duplicate_entity_key": "An entity with this key already exists on this device.",
       "invalid_connection": "Connection type and value are required.",
       "invalid_connection_type": "Connection type is invalid.",
-      "invalid_mac": "MAC address is invalid."
+      "invalid_mac": "MAC address is invalid.",
+      "invalid_boolean": "Value must be true or false.",
+      "invalid_number": "Number value is invalid.",
+      "invalid_option": "Selected option is invalid.",
+      "invalid_options": "Provide at least one option.",
+      "invalid_text": "Text value is invalid.",
+      "invalid_brightness": "Brightness must be between 1 and 255."
     }
   }
 }

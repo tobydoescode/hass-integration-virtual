@@ -6,15 +6,30 @@ testing purposes.
 ## Features
 
 - Create one virtual device per config entry.
-- Add zero or more switch entities during setup.
-- Add, edit, and hard-remove switches from the config entry options flow.
-- Restore virtual switch on/off state across Home Assistant restarts.
+- Add zero or more virtual entities during setup.
+- Add, edit, and hard-remove entities from the config entry options flow.
+- Supports `switch`, `binary_sensor`, `sensor`, `button`, `light`, `number`,
+  `select`, `text`, `date`, `datetime`, and `time` entities.
+- Restore supported virtual entity state across Home Assistant restarts.
+- Set entity state through the `virtual.set_state` service. Button entities are
+  action-only and are not supported by this service.
 - Optionally set a device connection (`none`, `mac`, or `custom`) for Home
   Assistant device-registry grouping.
-- Configure switch icon, entity category, and switch device class.
+- Configure entity icon, entity category, device class, and type-specific
+  options such as units, state class, ranges, options, modes, and brightness.
 
-Only switch entities are supported in v1. The internal data model uses stable
-device IDs and switch keys so YAML import/reload support can be added later.
+The internal data model uses stable device IDs and entity keys so YAML
+import/reload support can be added later.
+
+Example service call:
+
+```yaml
+service: virtual.set_state
+target:
+  entity_id: sensor.virtual_temperature
+data:
+  value: "21.5"
+```
 
 ## Installation
 
