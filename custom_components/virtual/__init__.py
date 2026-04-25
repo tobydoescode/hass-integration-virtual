@@ -24,6 +24,8 @@ _LOGGER = logging.getLogger(__name__)
 SERVICE_EXPORT_YAML = "export_yaml"
 SERVICE_IMPORT_YAML = "import_yaml"
 
+CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Virtual integration."""
