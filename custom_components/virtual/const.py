@@ -24,7 +24,6 @@ PLATFORMS = [
 CONF_DEVICE_ID = "device_id"
 CONF_ENTITIES = "entities"
 CONF_ENTITY_TYPE = "type"
-CONF_SWITCHES = "switches"
 CONF_KEY = "key"
 CONF_ICON = "icon"
 CONF_ENTITY_CATEGORY = "entity_category"

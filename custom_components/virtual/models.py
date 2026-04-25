@@ -52,11 +52,6 @@ def generate_device_id() -> str:
     return f"virtual_{uuid4().hex}"
 
 
-def generate_switch_key(name: str, existing_keys: set[str]) -> str:
-    """Generate a readable switch key that does not collide."""
-    return generate_entity_key(name, existing_keys)
-
-
 def generate_entity_key(name: str, existing_keys: set[str]) -> str:
     """Generate a readable entity key that does not collide."""
     base = slugify(name, separator="_") or "switch"
@@ -66,11 +61,6 @@ def generate_entity_key(name: str, existing_keys: set[str]) -> str:
         key = f"{base}_{suffix}"
         suffix += 1
     return key
-
-
-def validate_unique_switch_key(key: str, switches: list[dict[str, Any]]) -> None:
-    """Validate that a switch key is not already used in this device."""
-    validate_unique_entity_key(key, switches)
 
 
 def validate_unique_entity_key(key: str, entities: list[dict[str, Any]]) -> None:
@@ -151,12 +141,6 @@ def _coerce_bool(value: Any) -> bool:
     raise VirtualValidationError("invalid_boolean")
 
 
-def _validate_old_duplicate_switch_key(key: str, switches: list[dict[str, Any]]) -> None:
-    """Validate switch keys for compatibility with old error tests."""
-    if any(switch.get("key") == key for switch in switches):
-        raise VirtualValidationError("duplicate_switch_key")
-
-
 def normalize_connection(
     connection_type: str,
     connection_value: str | None,
@@ -214,11 +198,6 @@ def connection_tuple(device: dict[str, Any]) -> tuple[str, str] | None:
             device[CONF_CONNECTION_VALUE],
         )
     return None
-
-
-def switch_unique_id(device_id: str, switch_key: str) -> str:
-    """Return the unique id for a switch."""
-    return f"{device_id}_{switch_key}"
 
 
 def _normalize_mac(value: str) -> str:

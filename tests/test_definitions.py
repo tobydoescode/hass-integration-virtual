@@ -18,7 +18,6 @@ from custom_components.virtual.const import (
     CONF_MIN,
     CONF_OPTIONS,
     CONF_STEP,
-    CONF_SWITCHES,
     CONF_VALUE_TYPE,
     ENTITY_TYPE_BINARY_SENSOR,
     ENTITY_TYPE_DATE,
@@ -40,10 +39,8 @@ from custom_components.virtual.models import (
     entity_unique_id,
     generate_device_id,
     generate_entity_key,
-    generate_switch_key,
     normalize_connection,
     validate_unique_entity_key,
-    validate_unique_switch_key,
 )
 
 
@@ -55,23 +52,16 @@ def test_generate_device_id_uses_virtual_prefix() -> None:
     assert len(device_id) > len("virtual_")
 
 
-def test_generate_switch_key_slugs_name_and_avoids_collisions() -> None:
-    """Generate readable switch keys with suffixes for collisions."""
-    existing = {"test_switch", "test_switch_2"}
-
-    assert generate_switch_key("Test Switch", existing) == "test_switch_3"
-
-
-def test_generate_switch_key_uses_fallback_for_empty_names() -> None:
-    """Generate a useful switch key when a name has no slug characters."""
-    assert generate_switch_key("!!!", set()) == "switch"
-
-
 def test_generate_entity_key_slugs_name_and_avoids_collisions() -> None:
     """Generate readable entity keys with suffixes for collisions."""
     assert generate_entity_key("Test Entity", {"test_entity", "test_entity_2"}) == (
         "test_entity_3"
     )
+
+
+def test_generate_entity_key_uses_fallback_for_empty_names() -> None:
+    """Generate a useful entity key when a name has no slug characters."""
+    assert generate_entity_key("!!!", set()) == "switch"
 
 
 def test_validate_unique_entity_key_rejects_duplicate_across_types() -> None:
@@ -190,12 +180,6 @@ def test_normalize_mac_connection_rejects_invalid_mac() -> None:
         normalize_connection(CONNECTION_TYPE_MAC, "not-a-mac", "")
 
 
-def test_validate_unique_switch_key_rejects_duplicates() -> None:
-    """Duplicate switch keys in one device are rejected."""
-    with pytest.raises(VirtualValidationError):
-        validate_unique_switch_key("test", [{"key": "test"}])
-
-
 def test_build_device_info_includes_identifier_and_mac_connection() -> None:
     """Device info contains virtual identifier and optional MAC connection."""
     info = build_device_info(
@@ -204,7 +188,7 @@ def test_build_device_info_includes_identifier_and_mac_connection() -> None:
             CONF_DEVICE_ID: "virtual_test",
             CONF_CONNECTION_TYPE: CONNECTION_TYPE_MAC,
             CONF_CONNECTION_VALUE: "aa:bb:cc:dd:ee:ff",
-            CONF_SWITCHES: [],
+            CONF_ENTITIES: [],
         }
     )
 
