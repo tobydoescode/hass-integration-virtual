@@ -7,7 +7,19 @@ from homeassistant.const import Platform
 DOMAIN = "virtual"
 MANUFACTURER = "Virtual"
 
-PLATFORMS = [Platform.SWITCH]
+PLATFORMS = [
+    Platform.SWITCH,
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.LIGHT,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.TEXT,
+    Platform.DATE,
+    Platform.DATETIME,
+    Platform.TIME,
+]
 
 CONF_DEVICE_ID = "device_id"
 CONF_ENTITIES = "entities"
