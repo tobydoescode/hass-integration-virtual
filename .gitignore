@@ -11,6 +11,10 @@ build/
 # Tool caches
 .ruff_cache/
 .pytest_cache/
+.coverage
+coverage-html/
+coverage.xml
+coverage.txt
 
 # IDE
 .idea/
