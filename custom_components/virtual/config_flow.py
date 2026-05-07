@@ -9,10 +9,14 @@ import voluptuous as vol
 from homeassistant.components.number import NumberMode
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.components.text import TextMode
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_NAME, Platform
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import entity_registry as er
 
 from .const import (
@@ -230,7 +234,7 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
         self._entities: list[dict[str, Any]] = []
         self._selected_entity_type: str | None = None
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle virtual device details."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -258,7 +262,9 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="user", data_schema=_device_schema(), errors=errors)
 
-    async def async_step_entity_menu(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_entity_menu(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Ask whether to add another entity."""
         if user_input is not None:
             if user_input[CONF_ADD_ENTITY]:
@@ -275,7 +281,7 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_add_entity_type(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Choose the entity type to add."""
         if user_input is not None:
             self._selected_entity_type = user_input[CONF_ENTITY_TYPE]
@@ -283,7 +289,9 @@ class VirtualConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="add_entity_type", data_schema=_entity_type_schema())
 
-    async def async_step_add_entity(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_add_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Add an entity to the virtual device."""
         entity_type = self._selected_entity_type
         if entity_type is None:
@@ -333,7 +341,7 @@ class VirtualOptionsFlow(OptionsFlow):
         self._selected_entity_type: str | None = None
         self._selected_remove_keys: list[str] = []
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Choose an options action."""
         if user_input is not None:
             action = user_input[CONF_ACTION]
@@ -351,7 +359,9 @@ class VirtualOptionsFlow(OptionsFlow):
             data_schema=vol.Schema({vol.Required(CONF_ACTION): vol.In(OPTIONS_ACTIONS)}),
         )
 
-    async def async_step_edit_device(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_edit_device(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Edit device metadata."""
         errors: dict[str, str] = {}
         current = self._config_entry.data
@@ -386,7 +396,7 @@ class VirtualOptionsFlow(OptionsFlow):
 
     async def async_step_add_entity_type(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Choose the entity type to add."""
         if user_input is not None:
             self._selected_entity_type = user_input[CONF_ENTITY_TYPE]
@@ -394,7 +404,9 @@ class VirtualOptionsFlow(OptionsFlow):
 
         return self.async_show_form(step_id="add_entity_type", data_schema=_entity_type_schema())
 
-    async def async_step_add_entity(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_add_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Add an entity to an existing virtual device."""
         entity_type = self._selected_entity_type
         if entity_type is None:
@@ -422,7 +434,7 @@ class VirtualOptionsFlow(OptionsFlow):
 
     async def async_step_select_entity(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Select an entity to edit."""
         entities = self._config_entry.data.get(CONF_ENTITIES, [])
         key_options = [entity[CONF_KEY] for entity in entities]
@@ -435,7 +447,9 @@ class VirtualOptionsFlow(OptionsFlow):
             data_schema=vol.Schema({vol.Required(CONF_KEY): vol.In(key_options)}),
         )
 
-    async def async_step_edit_entity(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_edit_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Edit entity metadata and type-specific fields."""
         current = self._config_entry.data
         entities = list(current.get(CONF_ENTITIES, []))
@@ -472,7 +486,7 @@ class VirtualOptionsFlow(OptionsFlow):
 
     async def async_step_remove_entity(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Select entities to remove."""
         entities = self._config_entry.data.get(CONF_ENTITIES, [])
         key_options = [entity[CONF_KEY] for entity in entities]
@@ -489,7 +503,7 @@ class VirtualOptionsFlow(OptionsFlow):
 
     async def async_step_confirm_remove_entity(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Confirm hard removal of entities."""
         if user_input is not None:
             if user_input[CONF_CONFIRM]:
@@ -536,7 +550,7 @@ class VirtualOptionsFlow(OptionsFlow):
         self.hass.config_entries.async_update_entry(self._config_entry, data=data)
 
 
-def _entity_from_input(
+def _entity_from_input(  # noqa: C901
     entity_type: str,
     user_input: dict[str, Any],
     existing_entities: list[dict[str, Any]],

@@ -7,7 +7,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
+    "pyright>=1.1",
     "pytest>=8.0",
+    "pytest-cov>=6.0",
     "pytest-homeassistant-custom-component>=0.13",
     "pre-commit>=4.0",
     "ruff>=0.11",
@@ -18,7 +20,16 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C901", "PIE"]
+
+[tool.pyright]
+pythonVersion = "3.13"
+reportIncompatibleVariableOverride = false
+reportArgumentType = false
+reportAttributeAccessIssue = false
+
+[tool.coverage.run]
+relative_files = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

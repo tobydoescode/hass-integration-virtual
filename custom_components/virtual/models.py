@@ -105,7 +105,7 @@ def validate_device_definition(device: dict[str, Any]) -> None:
         validate_entity_definition(entity)
 
 
-def validate_entity_definition(entity: dict[str, Any]) -> None:
+def validate_entity_definition(entity: dict[str, Any]) -> None:  # noqa: C901
     """Validate a virtual entity definition."""
     entity_type = entity.get(CONF_ENTITY_TYPE)
     if entity_type not in SUPPORTED_ENTITY_TYPES:
@@ -186,7 +186,7 @@ def entity_unique_id(device_id: str, entity_key: str) -> str:
     return f"{device_id}_{entity_key}"
 
 
-def coerce_entity_value(definition: dict[str, Any], value: Any) -> Any:
+def coerce_entity_value(definition: dict[str, Any], value: Any) -> Any:  # noqa: C901
     """Coerce a value according to an entity definition."""
     entity_type = definition[CONF_ENTITY_TYPE]
     if entity_type in {ENTITY_TYPE_SWITCH, ENTITY_TYPE_BINARY_SENSOR, ENTITY_TYPE_LIGHT}:
