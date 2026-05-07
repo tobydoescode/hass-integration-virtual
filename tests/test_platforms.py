@@ -12,8 +12,11 @@ from homeassistant.components.light import (
     DOMAIN as LIGHT_DOMAIN,
 )
 from homeassistant.const import ATTR_ENTITY_ID, CONF_NAME, STATE_ON
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.restore_state import StoredState
+from homeassistant.helpers.restore_state import async_get as async_get_restore_state
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.virtual.const import (
@@ -219,3 +222,19 @@ async def test_light_and_button_native_services(hass: HomeAssistant) -> None:
         blocking=True,
     )
     assert "last_pressed" in hass.states.get("button.reset").attributes
+
+
+async def test_invalid_restored_state_falls_back_to_initial_value(hass: HomeAssistant) -> None:
+    """Invalid restored values do not prevent entities from being added."""
+    async_get_restore_state(hass).last_states["number.level"] = StoredState(
+        State("number.level", "99"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("number.level").state == "5.0"

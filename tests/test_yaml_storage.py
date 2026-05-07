@@ -19,8 +19,10 @@ from custom_components.virtual.const import (
     CONF_ENTITY_TYPE,
     CONF_INITIAL_VALUE,
     CONF_KEY,
+    CONF_OPTIONS,
     CONNECTION_TYPE_NONE,
     DOMAIN,
+    ENTITY_TYPE_SELECT,
     ENTITY_TYPE_SWITCH,
 )
 from custom_components.virtual.yaml_storage import (
@@ -215,9 +217,71 @@ async def test_entry_setup_imports_yaml_before_platform_setup(hass: HomeAssistan
     assert hass.states.get("switch.yaml_switch") is not None
 
 
+async def test_manual_yaml_import_reloads_added_entity_state(
+    hass: HomeAssistant,
+) -> None:
+    """Manual YAML import reloads changed entries so added entities appear."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="YAML Device",
+        unique_id="virtual_yaml",
+        data={**_yaml_device(), CONF_ENTITIES: []},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("switch.yaml_switch") is None
+    await async_export_entries_to_yaml(hass, [_yaml_device()])
+
+    await async_import_yaml_to_entries(hass)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("switch.yaml_switch").state == "on"
+
+
 async def test_load_yaml_devices_rejects_invalid_shape(hass: HomeAssistant) -> None:
     """Invalid YAML structure raises a validation error."""
     Path(hass.config.path(YAML_FILE_NAME)).write_text("devices: not-a-list\n")
 
     with pytest.raises(ValueError, match="devices"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_devices_rejects_duplicate_device_ids(hass: HomeAssistant) -> None:
+    """YAML devices must have unique device IDs."""
+    await async_export_entries_to_yaml(hass, [_yaml_device(), _yaml_device()])
+
+    with pytest.raises(ValueError, match="duplicate_device_id"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_devices_rejects_duplicate_entity_keys(hass: HomeAssistant) -> None:
+    """YAML entity keys must be unique within a device."""
+    device = _yaml_device()
+    device[CONF_ENTITIES].append({**device[CONF_ENTITIES][0], CONF_NAME: "Duplicate"})
+    await async_export_entries_to_yaml(hass, [device])
+
+    with pytest.raises(ValueError, match="duplicate_entity_key"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_devices_rejects_invalid_type_specific_entity(
+    hass: HomeAssistant,
+) -> None:
+    """YAML import validates type-specific entity fields before storage."""
+    device = {
+        **_yaml_device(),
+        CONF_ENTITIES: [
+            {
+                CONF_ENTITY_TYPE: ENTITY_TYPE_SELECT,
+                CONF_NAME: "Mode",
+                CONF_KEY: "mode",
+                CONF_OPTIONS: ["auto", "heat"],
+                CONF_INITIAL_VALUE: "cool",
+            }
+        ],
+    }
+    await async_export_entries_to_yaml(hass, [device])
+
+    with pytest.raises(ValueError, match="invalid_option"):
         await async_load_yaml_devices(hass)

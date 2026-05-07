@@ -61,5 +61,109 @@
       "invalid_text": "Text value is invalid.",
       "invalid_brightness": "Brightness must be between 1 and 255."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage virtual device",
+        "description": "Choose what to update.",
+        "data": {
+          "action": "Action"
+        }
+      },
+      "edit_device": {
+        "title": "Edit virtual device",
+        "description": "Update the virtual device metadata.",
+        "data": {
+          "name": "Device name",
+          "device_id": "Device ID",
+          "connection_type": "Connection type",
+          "connection_value": "Connection value",
+          "custom_connection_type": "Custom connection type"
+        }
+      },
+      "add_entity_type": {
+        "title": "Choose entity type",
+        "description": "Choose the type of virtual entity to add.",
+        "data": {
+          "type": "Entity type"
+        }
+      },
+      "add_entity": {
+        "title": "Add entity",
+        "description": "Define a virtual entity.",
+        "data": {
+          "name": "Name",
+          "key": "Key",
+          "icon": "Icon",
+          "entity_category": "Entity category",
+          "device_class": "Device class",
+          "initial_value": "Initial value",
+          "value_type": "Value type",
+          "native_unit_of_measurement": "Unit of measurement",
+          "state_class": "State class",
+          "min": "Minimum",
+          "max": "Maximum",
+          "step": "Step",
+          "mode": "Mode",
+          "options": "Options",
+          "brightness": "Brightness"
+        }
+      },
+      "select_entity": {
+        "title": "Select entity",
+        "description": "Choose the virtual entity to edit.",
+        "data": {
+          "key": "Entity"
+        }
+      },
+      "edit_entity": {
+        "title": "Edit entity",
+        "description": "Update the virtual entity.",
+        "data": {
+          "name": "Name",
+          "icon": "Icon",
+          "entity_category": "Entity category",
+          "device_class": "Device class",
+          "initial_value": "Initial value",
+          "value_type": "Value type",
+          "native_unit_of_measurement": "Unit of measurement",
+          "state_class": "State class",
+          "min": "Minimum",
+          "max": "Maximum",
+          "step": "Step",
+          "mode": "Mode",
+          "options": "Options",
+          "brightness": "Brightness"
+        }
+      },
+      "remove_entity": {
+        "title": "Remove entities",
+        "description": "Choose virtual entities to remove.",
+        "data": {
+          "entity_keys": "Entities"
+        }
+      },
+      "confirm_remove_entity": {
+        "title": "Confirm removal",
+        "description": "Remove the selected virtual entities and their entity registry entries.",
+        "data": {
+          "confirm": "Confirm removal"
+        }
+      }
+    },
+    "error": {
+      "duplicate_entity_key": "An entity with this key already exists on this device.",
+      "invalid_connection": "Connection type and value are required.",
+      "invalid_connection_type": "Connection type is invalid.",
+      "invalid_mac": "MAC address is invalid.",
+      "invalid_boolean": "Value must be true or false.",
+      "invalid_number": "Number value is invalid.",
+      "invalid_option": "Selected option is invalid.",
+      "invalid_options": "Provide at least one option.",
+      "invalid_text": "Text value is invalid.",
+      "invalid_brightness": "Brightness must be between 1 and 255.",
+      "unknown_entity": "Selected entity no longer exists."
+    }
   }
 }

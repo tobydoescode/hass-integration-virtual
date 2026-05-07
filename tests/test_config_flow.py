@@ -342,6 +342,49 @@ async def test_options_flow_adds_entity(hass: HomeAssistant) -> None:
     assert entry.data[CONF_ENTITIES][0][CONF_KEY] == "added"
 
 
+async def test_options_flow_adds_entity_and_reload_creates_state(
+    hass: HomeAssistant,
+) -> None:
+    """Adding an entity through options reloads the entry and creates its state."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Virtual Device",
+        data={
+            CONF_NAME: "Virtual Device",
+            CONF_DEVICE_ID: "virtual_device",
+            CONF_CONNECTION_TYPE: CONNECTION_TYPE_NONE,
+            CONF_ENTITIES: [],
+        },
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"action": "add_entity"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_ENTITY_TYPE: ENTITY_TYPE_SWITCH}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Added",
+            CONF_KEY: "",
+            CONF_ICON: "",
+            CONF_ENTITY_CATEGORY: "",
+            CONF_DEVICE_CLASS: "",
+            CONF_INITIAL_VALUE: True,
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+    assert hass.states.get("switch.added").state == "on"
+
+
 async def test_options_flow_edits_device_metadata(hass: HomeAssistant) -> None:
     """Edit device name and connection."""
     entry = MockConfigEntry(
@@ -482,3 +525,51 @@ async def test_options_flow_hard_removes_entity(hass: HomeAssistant) -> None:
     assert result["type"] == "create_entry"
     assert entry.data[CONF_ENTITIES] == []
     assert er.async_get(hass).async_get("switch.main_power") is None
+
+
+async def test_options_flow_removes_entity_and_reload_removes_state(
+    hass: HomeAssistant,
+) -> None:
+    """Removing an entity through options reloads the entry and removes its state."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Virtual Device",
+        data={
+            CONF_NAME: "Virtual Device",
+            CONF_DEVICE_ID: "virtual_device",
+            CONF_CONNECTION_TYPE: CONNECTION_TYPE_NONE,
+            CONF_ENTITIES: [
+                {
+                    CONF_ENTITY_TYPE: ENTITY_TYPE_SWITCH,
+                    CONF_NAME: "Main Power",
+                    CONF_KEY: "main_power",
+                    CONF_ICON: "",
+                    CONF_ENTITY_CATEGORY: "",
+                    CONF_DEVICE_CLASS: "",
+                    CONF_INITIAL_VALUE: False,
+                }
+            ],
+        },
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("switch.main_power") is not None
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"action": "remove_entity"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"entity_keys": ["main_power"]},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"confirm": True},
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+    assert hass.states.get("switch.main_power") is None

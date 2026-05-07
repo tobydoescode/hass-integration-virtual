@@ -19,7 +19,7 @@ from .const import (
     CONF_NATIVE_UNIT_OF_MEASUREMENT,
     CONF_STEP,
 )
-from .entity import VirtualEntityBase
+from .entity import VirtualEntityBase, coerce_restored_state
 from .models import coerce_entity_value, entities_for_platform
 
 
@@ -53,8 +53,12 @@ class VirtualNumber(VirtualEntityBase, RestoreEntity, NumberEntity):
     async def async_added_to_hass(self) -> None:
         """Restore the previous number state."""
         await super().async_added_to_hass()
-        if (last_state := await self.async_get_last_state()) is not None:
-            self._attr_native_value = coerce_entity_value(self._definition, last_state.state)
+        if (last_state := await self.async_get_last_state()) is None:
+            return
+        if (
+            value := coerce_restored_state(self._definition, self.entity_id, last_state.state)
+        ) is not None:
+            self._attr_native_value = value
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the number value."""

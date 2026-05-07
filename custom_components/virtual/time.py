@@ -13,7 +13,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import CONF_INITIAL_VALUE
-from .entity import VirtualEntityBase
+from .entity import VirtualEntityBase, coerce_restored_state
 from .models import coerce_entity_value, entities_for_platform
 
 
@@ -40,8 +40,12 @@ class VirtualTime(VirtualEntityBase, RestoreEntity, TimeEntity):
     async def async_added_to_hass(self) -> None:
         """Restore the previous time state."""
         await super().async_added_to_hass()
-        if (last_state := await self.async_get_last_state()) is not None:
-            self._attr_native_value = coerce_entity_value(self._definition, last_state.state)
+        if (last_state := await self.async_get_last_state()) is None:
+            return
+        if (
+            value := coerce_restored_state(self._definition, self.entity_id, last_state.state)
+        ) is not None:
+            self._attr_native_value = value
 
     async def async_set_value(self, value: dt_time) -> None:
         """Set time value."""

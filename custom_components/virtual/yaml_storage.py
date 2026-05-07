@@ -21,6 +21,7 @@ from .const import (
     CONNECTION_TYPE_NONE,
     DOMAIN,
 )
+from .models import validate_device_definition
 
 YAML_FILE_NAME = "virtual.yaml"
 YAML_DEVICES = "devices"
@@ -44,7 +45,15 @@ async def async_load_yaml_devices(hass: HomeAssistant) -> list[dict[str, Any]]:
     if not isinstance(devices, list):
         raise ValueError(f"{YAML_DEVICES} must be a list")
 
-    return [_normalize_device(device) for device in devices]
+    normalized_devices = [_normalize_device(device) for device in devices]
+    seen_device_ids: set[str] = set()
+    for device in normalized_devices:
+        device_id = device[CONF_DEVICE_ID]
+        if device_id in seen_device_ids:
+            raise ValueError("duplicate_device_id")
+        seen_device_ids.add(device_id)
+        validate_device_definition(device)
+    return normalized_devices
 
 
 async def async_export_entries_to_yaml(hass: HomeAssistant, devices: list[dict[str, Any]]) -> None:

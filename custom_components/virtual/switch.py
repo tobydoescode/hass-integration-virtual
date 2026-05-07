@@ -6,13 +6,13 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_ON, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import CONF_INITIAL_VALUE
-from .entity import VirtualEntityBase
+from .entity import VirtualEntityBase, coerce_restored_state
 from .models import coerce_entity_value, entities_for_platform
 
 
@@ -39,8 +39,12 @@ class VirtualSwitch(VirtualEntityBase, RestoreEntity, SwitchEntity):
     async def async_added_to_hass(self) -> None:
         """Restore the previous switch state."""
         await super().async_added_to_hass()
-        if (last_state := await self.async_get_last_state()) is not None:
-            self._attr_is_on = last_state.state == STATE_ON
+        if (last_state := await self.async_get_last_state()) is None:
+            return
+        if (
+            value := coerce_restored_state(self._definition, self.entity_id, last_state.state)
+        ) is not None:
+            self._attr_is_on = value
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""

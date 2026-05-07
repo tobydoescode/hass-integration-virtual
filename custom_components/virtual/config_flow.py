@@ -59,6 +59,7 @@ from .models import (
     generate_device_id,
     generate_entity_key,
     normalize_connection,
+    validate_entity_definition,
     validate_unique_entity_key,
 )
 
@@ -603,6 +604,7 @@ def _entity_from_input(
             coerce_entity_value(entity, user_input[CONF_INITIAL_VALUE])
         )
 
+    validate_entity_definition(entity)
     return entity
 
 

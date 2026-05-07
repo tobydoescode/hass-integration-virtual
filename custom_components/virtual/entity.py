@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_NAME, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 
 from .const import (
@@ -14,7 +15,9 @@ from .const import (
     CONF_ICON,
     CONF_KEY,
 )
-from .models import build_device_info, entity_unique_id
+from .models import build_device_info, coerce_entity_value, entity_unique_id
+
+_LOGGER = logging.getLogger(__name__)
 
 DATA_ENTITY_REGISTRY = "entity_registry"
 
@@ -57,3 +60,20 @@ class VirtualEntityBase:
     async def async_set_virtual_state(self, value: Any) -> None:
         """Set state from the virtual.set_state service."""
         raise NotImplementedError
+
+
+def coerce_restored_state(
+    definition: dict[str, Any], entity_id: str, restored_state: str
+) -> Any | None:
+    """Coerce a restored state, returning None when it should be ignored."""
+    if restored_state in {STATE_UNKNOWN, STATE_UNAVAILABLE}:
+        return None
+    try:
+        return coerce_entity_value(definition, restored_state)
+    except Exception as err:
+        _LOGGER.warning(
+            "Ignoring invalid restored state for %s: %s",
+            entity_id,
+            err,
+        )
+        return None
