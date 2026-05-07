@@ -6,7 +6,7 @@
     {
       "groupName": "dev dependencies",
       "matchDepTypes": ["project.optional-dependencies"],
-      "matchPackagePatterns": ["pytest*", "ruff"]
+      "matchPackagePatterns": ["pyright", "pytest*", "ruff"]
     }
   ]
 }

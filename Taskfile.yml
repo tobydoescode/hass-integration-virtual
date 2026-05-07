@@ -28,6 +28,16 @@ tasks:
     cmds:
       - uv run pytest tests/ -v
 
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - uv run pytest tests/ --cov=custom_components/virtual --cov-report=term-missing --cov-report=html
+
+  typecheck:
+    desc: Run pyright type checker
+    cmds:
+      - uv run pyright custom_components/virtual/
+
   dev:
     desc: Start Home Assistant dev instance
     cmds:
