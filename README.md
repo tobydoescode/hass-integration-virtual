@@ -1,5 +1,8 @@
 # Home Assistant Virtual Integration
 
+[![HACS Validation](https://github.com/tobydoescode/hass-integration-virtual/actions/workflows/validate.yaml/badge.svg)](https://github.com/tobydoescode/hass-integration-virtual/actions/workflows/validate.yaml)
+[![CI](https://github.com/tobydoescode/hass-integration-virtual/actions/workflows/ci.yml/badge.svg)](https://github.com/tobydoescode/hass-integration-virtual/actions/workflows/ci.yml)
+
 Home Assistant custom integration for creating virtual devices and entities for
 testing purposes.
 

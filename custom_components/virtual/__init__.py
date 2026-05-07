@@ -46,6 +46,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
 
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate config entry to current version."""
+    _LOGGER.debug("Migrating Virtual config entry from %s.%s", entry.version, entry.minor_version)
+    # Future migrations go here.
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Virtual from a config entry."""
     await async_import_yaml_to_entries(hass, reload_entries=False)
