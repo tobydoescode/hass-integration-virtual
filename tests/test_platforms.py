@@ -238,3 +238,218 @@ async def test_invalid_restored_state_falls_back_to_initial_value(hass: HomeAssi
     await hass.async_block_till_done()
 
     assert hass.states.get("number.level").state == "5.0"
+
+
+async def test_light_restores_previous_on_state_with_brightness(hass: HomeAssistant) -> None:
+    """Restore light on state and brightness from stored state."""
+    async_get_restore_state(hass).last_states["light.lamp"] = StoredState(
+        State("light.lamp", STATE_ON, {"brightness": 200}),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("light.lamp")
+    assert state is not None
+    assert state.state == STATE_ON
+    assert state.attributes[ATTR_BRIGHTNESS] == 200
+
+
+async def test_light_turn_off(hass: HomeAssistant) -> None:
+    """Turn off a virtual light."""
+    from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+    from homeassistant.const import SERVICE_TURN_OFF
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.services.async_call(
+        LIGHT_DOMAIN,
+        SERVICE_TURN_OFF,
+        {ATTR_ENTITY_ID: "light.lamp"},
+        blocking=True,
+    )
+    assert hass.states.get("light.lamp").state == "off"
+
+
+async def test_date_set_value(hass: HomeAssistant) -> None:
+    """Set a virtual date value."""
+    from datetime import date as dt_date
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.services.async_call(
+        "date",
+        "set_value",
+        {ATTR_ENTITY_ID: "date.date", "date": dt_date(2026, 6, 1).isoformat()},
+        blocking=True,
+    )
+    assert hass.states.get("date.date").state == "2026-06-01"
+
+
+async def test_date_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore date state from stored state."""
+    async_get_restore_state(hass).last_states["date.date"] = StoredState(
+        State("date.date", "2026-03-15"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("date.date").state == "2026-03-15"
+
+
+async def test_datetime_set_value(hass: HomeAssistant) -> None:
+    """Set a virtual datetime value."""
+    from datetime import datetime, timezone
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    dt_val = datetime(2026, 6, 1, 10, 0, 0, tzinfo=timezone.utc)
+    await hass.services.async_call(
+        "datetime",
+        "set_value",
+        {ATTR_ENTITY_ID: "datetime.date_time", "datetime": dt_val.isoformat()},
+        blocking=True,
+    )
+    assert hass.states.get("datetime.date_time").state == "2026-06-01T10:00:00+00:00"
+
+
+async def test_datetime_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore datetime state from stored state."""
+    async_get_restore_state(hass).last_states["datetime.date_time"] = StoredState(
+        State("datetime.date_time", "2026-03-15T08:00:00+00:00"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("datetime.date_time").state == "2026-03-15T08:00:00+00:00"
+
+
+async def test_time_set_value(hass: HomeAssistant) -> None:
+    """Set a virtual time value."""
+    from datetime import time as dt_time
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.services.async_call(
+        "time",
+        "set_value",
+        {ATTR_ENTITY_ID: "time.time", "time": dt_time(16, 0, 0).isoformat()},
+        blocking=True,
+    )
+    assert hass.states.get("time.time").state == "16:00:00"
+
+
+async def test_time_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore time state from stored state."""
+    async_get_restore_state(hass).last_states["time.time"] = StoredState(
+        State("time.time", "08:30:00"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("time.time").state == "08:30:00"
+
+
+async def test_binary_sensor_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore binary sensor state from stored state."""
+    from homeassistant.const import STATE_OFF
+
+    async_get_restore_state(hass).last_states["binary_sensor.motion"] = StoredState(
+        State("binary_sensor.motion", STATE_OFF),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("binary_sensor.motion").state == STATE_OFF
+
+
+async def test_sensor_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore sensor state from stored state."""
+    async_get_restore_state(hass).last_states["sensor.temperature"] = StoredState(
+        State("sensor.temperature", "25.0"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.temperature").state == "25.0"
+
+
+async def test_select_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore select state from stored state."""
+    async_get_restore_state(hass).last_states["select.mode"] = StoredState(
+        State("select.mode", "cool"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("select.mode").state == "cool"
+
+
+async def test_text_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore text state from stored state."""
+    async_get_restore_state(hass).last_states["text.message"] = StoredState(
+        State("text.message", "restored"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("text.message").state == "restored"
+
+
+async def test_number_restores_previous_state(hass: HomeAssistant) -> None:
+    """Restore number state from stored state."""
+    async_get_restore_state(hass).last_states["number.level"] = StoredState(
+        State("number.level", "7.0"),
+        None,
+        dt_util.utcnow(),
+    )
+    entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("number.level").state == "7.0"

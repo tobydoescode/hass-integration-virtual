@@ -3,12 +3,26 @@
 from __future__ import annotations
 
 import pytest
-from homeassistant.const import STATE_OFF
+from homeassistant.const import CONF_NAME, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.virtual.const import DOMAIN, SERVICE_SET_STATE
+from custom_components.virtual.const import (
+    CONF_CONNECTION_TYPE,
+    CONF_DEVICE_CLASS,
+    CONF_DEVICE_ID,
+    CONF_ENTITIES,
+    CONF_ENTITY_CATEGORY,
+    CONF_ENTITY_TYPE,
+    CONF_ICON,
+    CONF_INITIAL_VALUE,
+    CONF_KEY,
+    CONNECTION_TYPE_NONE,
+    DOMAIN,
+    ENTITY_TYPE_SWITCH,
+    SERVICE_SET_STATE,
+)
 from tests.test_platforms import all_platform_entry_data
 
 
@@ -72,3 +86,53 @@ async def test_set_state_invalid_value_leaves_state_unchanged(hass: HomeAssistan
             blocking=True,
         )
     assert hass.states.get("number.level").state == "5.0"
+
+
+async def test_set_state_updates_switch(hass: HomeAssistant) -> None:
+    """Set state for a virtual switch entity."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Switch Device",
+        data={
+            CONF_NAME: "Switch Device",
+            CONF_DEVICE_ID: "virtual_switch_dev",
+            CONF_CONNECTION_TYPE: CONNECTION_TYPE_NONE,
+            CONF_ENTITIES: [
+                {
+                    CONF_ENTITY_TYPE: ENTITY_TYPE_SWITCH,
+                    CONF_NAME: "Power",
+                    CONF_KEY: "power",
+                    CONF_ICON: "",
+                    CONF_ENTITY_CATEGORY: "",
+                    CONF_DEVICE_CLASS: "",
+                    CONF_INITIAL_VALUE: False,
+                }
+            ],
+        },
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("switch.power").state == STATE_OFF
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET_STATE,
+        {"entity_id": "switch.power", "value": True},
+        blocking=True,
+    )
+    assert hass.states.get("switch.power").state == STATE_ON
+
+
+async def test_set_state_updates_number(hass: HomeAssistant) -> None:
+    """Set state for a virtual number entity covers async_set_virtual_state."""
+    await _setup_entry(hass)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET_STATE,
+        {"entity_id": "number.level", "value": 3},
+        blocking=True,
+    )
+    assert hass.states.get("number.level").state == "3.0"

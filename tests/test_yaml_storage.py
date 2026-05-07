@@ -285,3 +285,132 @@ async def test_load_yaml_devices_rejects_invalid_type_specific_entity(
 
     with pytest.raises(ValueError, match="invalid_option"):
         await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_devices_returns_empty_when_data_is_none(
+    hass: HomeAssistant,
+) -> None:
+    """YAML file with no content returns empty list."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text("")
+    assert await async_load_yaml_devices(hass) == []
+
+
+async def test_load_yaml_devices_rejects_non_mapping_root(
+    hass: HomeAssistant,
+) -> None:
+    """YAML file with non-mapping root raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text("- item\n")
+    with pytest.raises(ValueError, match="must contain a mapping"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_non_dict_device(hass: HomeAssistant) -> None:
+    """YAML device entry that is not a mapping raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text("devices:\n  - not-a-mapping\n")
+    with pytest.raises(ValueError, match="Each YAML device must be a mapping"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_device_without_name(hass: HomeAssistant) -> None:
+    """YAML device without name raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - device_id: dev1\n"
+    )
+    with pytest.raises(ValueError, match="Each YAML device must define a name"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_device_without_device_id(hass: HomeAssistant) -> None:
+    """YAML device without device_id raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - name: Dev\n"
+    )
+    with pytest.raises(ValueError, match="Each YAML device must define a device_id"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_entities_not_a_list(hass: HomeAssistant) -> None:
+    """YAML device with non-list entities raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - name: Dev\n    device_id: dev1\n    entities: not-a-list\n"
+    )
+    with pytest.raises(ValueError, match="Device entities must be a list"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_non_dict_entity(hass: HomeAssistant) -> None:
+    """YAML entity that is not a mapping raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - not-a-mapping\n"
+    )
+    with pytest.raises(ValueError, match="Each YAML entity must be a mapping"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_entity_without_type(hass: HomeAssistant) -> None:
+    """YAML entity without type raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - name: E\n        key: e\n"
+    )
+    with pytest.raises(ValueError, match="Each YAML entity must define a type"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_entity_without_name(hass: HomeAssistant) -> None:
+    """YAML entity without name raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - type: switch\n        key: e\n"
+    )
+    with pytest.raises(ValueError, match="Each YAML entity must define a name"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_load_yaml_rejects_entity_without_key(hass: HomeAssistant) -> None:
+    """YAML entity without key raises."""
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(
+        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - type: switch\n        name: E\n"
+    )
+    with pytest.raises(ValueError, match="Each YAML entity must define a key"):
+        await async_load_yaml_devices(hass)
+
+
+async def test_yaml_import_matches_by_device_id_without_unique_id(
+    hass: HomeAssistant,
+) -> None:
+    """Import matches existing entries by device_id when unique_id is not set."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="YAML Device",
+        data=_yaml_device(),
+    )
+    entry.add_to_hass(hass)
+
+    updated = {**_yaml_device(), CONF_NAME: "Updated YAML"}
+    await async_export_entries_to_yaml(hass, [updated])
+
+    changed = await async_import_yaml_to_entries(hass, reload_entries=False)
+    assert len(changed) == 1
+    assert changed[0].title == "Updated YAML"
+
+
+async def test_export_config_entries_to_yaml(hass: HomeAssistant) -> None:
+    """Export all config entries to YAML."""
+    from custom_components.virtual.yaml_storage import async_export_config_entries_to_yaml
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Device",
+        data={
+            CONF_NAME: "Device",
+            CONF_DEVICE_ID: "virtual_exp",
+            CONF_CONNECTION_TYPE: CONNECTION_TYPE_NONE,
+            CONF_ENTITIES: [],
+        },
+    )
+    entry.add_to_hass(hass)
+
+    await async_export_config_entries_to_yaml(hass)
+    yaml_path = Path(hass.config.path(YAML_FILE_NAME))
+    assert yaml_path.exists()
+    content = yaml_path.read_text()
+    assert "virtual_exp" in content
