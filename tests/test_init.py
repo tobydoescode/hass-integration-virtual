@@ -163,10 +163,13 @@ async def test_export_yaml_service_raises_on_error(hass: HomeAssistant) -> None:
     assert await async_setup(hass, {})
     await hass.async_block_till_done()
 
-    with patch(
-        "custom_components.virtual.async_export_config_entries_to_yaml",
-        side_effect=RuntimeError("write failed"),
-    ), pytest.raises(HomeAssistantError, match="write failed"):
+    with (
+        patch(
+            "custom_components.virtual.async_export_config_entries_to_yaml",
+            side_effect=RuntimeError("write failed"),
+        ),
+        pytest.raises(HomeAssistantError, match="write failed"),
+    ):
         await hass.services.async_call(DOMAIN, "export_yaml", {}, blocking=True)
 
 

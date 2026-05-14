@@ -313,18 +313,14 @@ async def test_load_yaml_rejects_non_dict_device(hass: HomeAssistant) -> None:
 
 async def test_load_yaml_rejects_device_without_name(hass: HomeAssistant) -> None:
     """YAML device without name raises."""
-    Path(hass.config.path(YAML_FILE_NAME)).write_text(
-        "devices:\n  - device_id: dev1\n"
-    )
+    Path(hass.config.path(YAML_FILE_NAME)).write_text("devices:\n  - device_id: dev1\n")
     with pytest.raises(ValueError, match="Each YAML device must define a name"):
         await async_load_yaml_devices(hass)
 
 
 async def test_load_yaml_rejects_device_without_device_id(hass: HomeAssistant) -> None:
     """YAML device without device_id raises."""
-    Path(hass.config.path(YAML_FILE_NAME)).write_text(
-        "devices:\n  - name: Dev\n"
-    )
+    Path(hass.config.path(YAML_FILE_NAME)).write_text("devices:\n  - name: Dev\n")
     with pytest.raises(ValueError, match="Each YAML device must define a device_id"):
         await async_load_yaml_devices(hass)
 
