@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.virtual import async_setup
 from custom_components.virtual.const import (
     CONF_CONNECTION_TYPE,
     CONF_DEVICE_CLASS,
@@ -26,7 +27,6 @@ from custom_components.virtual.const import (
     ENTITY_TYPE_SWITCH,
     SERVICE_SET_STATE,
 )
-from custom_components.virtual import async_setup
 
 
 async def test_migrate_entry_returns_true(hass: HomeAssistant) -> None:
@@ -166,9 +166,8 @@ async def test_export_yaml_service_raises_on_error(hass: HomeAssistant) -> None:
     with patch(
         "custom_components.virtual.async_export_config_entries_to_yaml",
         side_effect=RuntimeError("write failed"),
-    ):
-        with pytest.raises(HomeAssistantError, match="write failed"):
-            await hass.services.async_call(DOMAIN, "export_yaml", {}, blocking=True)
+    ), pytest.raises(HomeAssistantError, match="write failed"):
+        await hass.services.async_call(DOMAIN, "export_yaml", {}, blocking=True)
 
 
 async def test_yaml_import_after_setup_handles_exception(

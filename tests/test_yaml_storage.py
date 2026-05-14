@@ -349,27 +349,33 @@ async def test_load_yaml_rejects_non_dict_entity(hass: HomeAssistant) -> None:
 
 async def test_load_yaml_rejects_entity_without_type(hass: HomeAssistant) -> None:
     """YAML entity without type raises."""
-    Path(hass.config.path(YAML_FILE_NAME)).write_text(
-        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - name: E\n        key: e\n"
+    yaml = (
+        "devices:\n  - name: Dev\n    device_id: dev1\n"
+        "    entities:\n      - name: E\n        key: e\n"
     )
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(yaml)
     with pytest.raises(ValueError, match="Each YAML entity must define a type"):
         await async_load_yaml_devices(hass)
 
 
 async def test_load_yaml_rejects_entity_without_name(hass: HomeAssistant) -> None:
     """YAML entity without name raises."""
-    Path(hass.config.path(YAML_FILE_NAME)).write_text(
-        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - type: switch\n        key: e\n"
+    yaml = (
+        "devices:\n  - name: Dev\n    device_id: dev1\n"
+        "    entities:\n      - type: switch\n        key: e\n"
     )
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(yaml)
     with pytest.raises(ValueError, match="Each YAML entity must define a name"):
         await async_load_yaml_devices(hass)
 
 
 async def test_load_yaml_rejects_entity_without_key(hass: HomeAssistant) -> None:
     """YAML entity without key raises."""
-    Path(hass.config.path(YAML_FILE_NAME)).write_text(
-        "devices:\n  - name: Dev\n    device_id: dev1\n    entities:\n      - type: switch\n        name: E\n"
+    yaml = (
+        "devices:\n  - name: Dev\n    device_id: dev1\n"
+        "    entities:\n      - type: switch\n        name: E\n"
     )
+    Path(hass.config.path(YAML_FILE_NAME)).write_text(yaml)
     with pytest.raises(ValueError, match="Each YAML entity must define a key"):
         await async_load_yaml_devices(hass)
 

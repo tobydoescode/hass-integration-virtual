@@ -1250,11 +1250,11 @@ def test_iso_formats_time() -> None:
 
 def test_iso_formats_datetime() -> None:
     """_iso returns ISO format for datetime."""
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     from custom_components.virtual.config_flow import _iso
 
-    assert _iso(datetime(2026, 5, 6, 14, 30, 0, tzinfo=timezone.utc)) == "2026-05-06T14:30:00+00:00"
+    assert _iso(datetime(2026, 5, 6, 14, 30, 0, tzinfo=UTC)) == "2026-05-06T14:30:00+00:00"
 
 
 # ---------------------------------------------------------------------------

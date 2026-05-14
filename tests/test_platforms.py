@@ -313,14 +313,14 @@ async def test_date_restores_previous_state(hass: HomeAssistant) -> None:
 
 async def test_datetime_set_value(hass: HomeAssistant) -> None:
     """Set a virtual datetime value."""
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     entry = MockConfigEntry(domain=DOMAIN, title="Virtual Device", data=all_platform_entry_data())
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    dt_val = datetime(2026, 6, 1, 10, 0, 0, tzinfo=timezone.utc)
+    dt_val = datetime(2026, 6, 1, 10, 0, 0, tzinfo=UTC)
     await hass.services.async_call(
         "datetime",
         "set_value",

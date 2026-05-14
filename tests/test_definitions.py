@@ -510,9 +510,9 @@ def test_coerce_date_value_accepts_date_object() -> None:
 # ---------------------------------------------------------------------------
 def test_coerce_datetime_value_accepts_datetime_object() -> None:
     """Datetime values that are already datetime objects pass through."""
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
-    dt = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    dt = datetime(2026, 1, 1, tzinfo=UTC)
     result = coerce_entity_value({CONF_ENTITY_TYPE: ENTITY_TYPE_DATETIME}, dt)
     assert result == dt
 
