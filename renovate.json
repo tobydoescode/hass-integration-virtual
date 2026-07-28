@@ -1,12 +1,45 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "assignees": ["tobydoescode"],
+  "extends": [
+    "config:recommended"
+  ],
+  "assignees": [
+    "tobydoescode"
+  ],
   "packageRules": [
     {
+      "matchDepNames": [
+        "python"
+      ],
+      "description": "One PR for every Python pin, so they cannot move independently",
+      "groupName": "python",
+      "separateMinorPatch": false
+    },
+    {
       "groupName": "dev dependencies",
-      "matchDepTypes": ["project.optional-dependencies"],
-      "matchPackagePatterns": ["pyright", "pytest*", "ruff"]
+      "matchDepTypes": [
+        "project.optional-dependencies"
+      ],
+      "matchPackagePatterns": [
+        "pyright",
+        "pytest*",
+        "ruff"
+      ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track requires-python, which no built-in manager updates, so it moves with .python-version instead of silently drifting behind it",
+      "managerFilePatterns": [
+        "/^pyproject\\.toml$/"
+      ],
+      "matchStrings": [
+        "requires-python\\s*=\\s*\"[^\"]*?(?<currentValue>\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     }
   ]
 }
